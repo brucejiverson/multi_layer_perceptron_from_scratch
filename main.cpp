@@ -74,21 +74,6 @@ LabeledData generate_XOR_test_data(int noise_magnitude=0, int n_meaningless_colu
 
 int main(){
 
-    // create an instance of the neural network (initializes with random weights)
-    // define the neural net dimensions: input, hidden nodes per layer, hidden layers, output nodes
-
-    double** features = new double*[1];
-    features[0] = new double[2];
-    features[0][0] = 0.05; 
-    features[0][1] = 0.1;
-
-    double** labels = new double*[1];
-    labels[0] = new double[1];
-    labels[0][0] = 0.01;
-    labels[0][1] = 0.99;
-
-    LabeledData test = {features, labels, 2, 2, 1}; // inputs, outputs, n samples
-
     auto data = generate_XOR_test_data();
     printf("XOR training data:\n");
     print_2D_array(data.features, 4, 2);
@@ -99,10 +84,6 @@ int main(){
     neural_net.hyper_params.learning_rate = 0.5;
     neural_net.hyper_params.momentum = 0;
     int n_epochs = 5000;
-
-    // train the neural network, recording the scores
-    // NeuralNet neural_net(2, 2, 2);
-    // int n_epochs = 1;
     
     Vector losses = neural_net.train(data, n_epochs);
     printf("Final weights and biases:\n");
@@ -111,9 +92,6 @@ int main(){
     printf("Starting loss: %f\n", losses.array[0]);
     printf("Ending loss: %f\n", losses.array[n_epochs-1]);
 
-    // Vector last_loss = neural_net.train(test, n_epochs);
-    // printf("last loss: %f\n", last_loss.array[0]);
-    
     neural_net.save_to_file();
     losses.save_to_file("training_records/losses.csv");
 }

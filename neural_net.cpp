@@ -165,25 +165,10 @@ class NeuralNet
             }
             _output_weights = random_matrix_0_to_1_factory(n_output_nodes, n_hidden_nodes);
 
-
-            // _input_weights.array[0][0] = 0.15;
-            // _input_weights.array[0][1] = 0.2;
-            // _input_weights.array[1][0] = 0.25;
-            // _input_weights.array[1][1] = 0.3;
-
-            // _output_weights.array[0][0] = 0.4;
-            // _output_weights.array[0][1] = 0.45;
-            // _output_weights.array[1][0] = 0.5;
-            // _output_weights.array[1][1] = 0.55;
-
-            // _hidden_biases.array[0][0] = 0.35;
-            // _hidden_biases.array[0][1] = 0.35;
-
-            // _output_biases.array[0] = 0.6;
-            // _output_biases.array[1] = 0.6;
-
-            printf("Neural net initialized:\n");
-            print_weights_and_biases();
+            printf("Neural net initialized!\n");
+            if (n_hidden_layers < 2 and n_hidden_nodes < 10){
+                print_weights_and_biases();
+            }
         }
 
         void describe(){
@@ -319,9 +304,10 @@ class NeuralNet
             _output_biases.save_to_file("model/output_biases.csv");
         }
 
-        void load_from_file(){
+        // load weights and biases from a file taking the folder as an optional argument
+        void load_from_file(std::string folder="model"){
             // get the dimensions from the metadata file
-            std::ifstream metadata_file("model/meta_info.txt");
+            std::ifstream metadata_file(folder + "/meta_info.txt");
             std::string line;
             std::getline(metadata_file, line);
             n_input_nodes = std::stoi(line);
@@ -360,6 +346,8 @@ class NeuralNet
                 exit(1);
             }
 
+            printf("Loaded all weights and biases from file");
+            print_weights_and_biases();
         }
 
         // destructor
@@ -468,22 +456,23 @@ class NeuralNet
             // calculate the output of the neural network and the loss
             auto prediction = feed_forwards(X);
 
+            // dW_L = dzOutput * a(L-1)^T; where a = g(z) = g(Wx + b) and L is the number of layers
             // NOTATION is dx = d(loss)/d(x)
             // calculate the derivative of the loss with respect to the output
-            Vector error = subtract_vectors(prediction.output, y);
+            Vector error = subtract_vectors(prediction.output, y);  // in some cases you would multiply this by 2 for the derivative of sum of square errors, but not necessary
             Vector dWoutput_term2 = prediction.output.copy();
-            // dWoutput_term2.apply_function(reverse_logistic);
             dWoutput_term2.apply_function(_output_activation_func_deriv);
             Vector dZOutput = hadamard_product(error, dWoutput_term2);  // elementwise multiplication
-
-            // dW_L = dzOutput * a(L-1)^T; where a = g(z) = g(Wx + b) and L is the number of layers
             Matrix dWOutput = multiply_vectors_for_matrix(dZOutput, prediction.layer_outputs[n_hidden_layers-1]);
 
+            // now do the hidden layers
             Matrix dWHidden[n_hidden_layers-1];
+            for (int i = n_hidden_layers-1; i > 0; i--){
+            }
+
 
             // now do the input layer
             Vector dWinput_term1 = prediction.layer_outputs[0].copy();
-            // dWinput_term1.apply_function(reverse_logistic);
             dWinput_term1.apply_function(_hidden_layer_activation_func_deriv);
             Vector dWinput_term2 = matrix_vector_multiply(_output_weights.transpose(), dZOutput);   // note that the order here is switched around in a weird way...
             Vector* dZHidden = new Vector[n_hidden_layers];
