@@ -6,7 +6,7 @@ using namespace std;
 
 void print_1D_array(double* array, int length){
     for(int i=0; i<length; i++){
-        printf("%.3f ", array[i]);
+        printf("%.4f ", array[i]);
     }
     std::cout<<std::endl;
 }
@@ -65,8 +65,10 @@ class Vector{
         }
         
         // a function called print that takes in the name of the array as an argument and prints it
-        void print(std::string name=""){;
-            printf("Vector %s w/ length %d is:\n", name.c_str(), length);
+        void print(std::string name=""){
+            // if (describe){
+                printf("Vector %s w/ length %d is:\n", name.c_str(), length);
+            // }
             print_1D_array(array, length);
             printf("\n");
         }
@@ -204,6 +206,54 @@ class Matrix{
             printf("Saved to file %s\n", filename.c_str());
         }
 };
+
+
+Matrix get_matrix_from_csv(std::string filename){
+    // open the file
+    ifstream file(filename);
+    // create a string to hold each line
+    string line;
+    // create a vector to hold the lines
+    vector<string> lines;
+    // read the file line by line
+    while (getline(file, line)){
+        lines.push_back(line);
+    }
+    // get the number of rows and columns
+    int rows = lines.size();
+    int cols = 0;
+    for (int i = 0; i < lines[0].size(); i++){
+        if (lines[0][i] == ','){            
+            cols++;
+        }
+    }
+
+    if (lines[0][lines[0].size()-1] == ',' && lines[0][lines[0].size()-2] == ','){
+        cols--;
+    }
+
+    // create a 2D array to hold the matrix
+    double** matrix = new double*[rows];
+    for (int i = 0; i < rows; i++){
+        matrix[i] = new double[cols];
+    }
+    // fill the matrix
+    for (int i = 0; i < rows; i++){
+        int col = 0;
+        string num = "";
+        for (int j = 0; j < lines[i].size(); j++){
+            if (lines[i][j] == ',' && num != ""){
+                matrix[i][col] = stod(num);
+                num = "";
+                col++;
+            }
+            else{
+                num += lines[i][j]; // add the character to the string
+            }
+        }
+    }
+    return Matrix(matrix, rows, cols);
+}
 
 
 Matrix get_matrix_from_1D_array(double* arr, int length){
@@ -423,9 +473,9 @@ Vector hadamard_product(Vector vec1, Vector vec2){
 // mutliplys two vectors together such that the result is a 2D matrix with element i,j = vec1[i] * vec2[j]
 Matrix multiply_vectors_for_matrix(Vector vec1, Vector vec2){
 
-    printf("multiplying two vectors to make a matrix.\n");
-    vec1.print("v1");
-    vec2.print("v2");
+    // printf("multiplying two vectors to make a matrix.\n");
+    // vec1.print("v1");
+    // vec2.print("v2");
     // create a new matrix to store the result of the subtraction
     double** result = new double*[vec1.length];
 
@@ -537,3 +587,10 @@ Vector zeros_vector_factory(int length){
     }
     return Vector(arr, length);
 }
+
+
+// int main(){
+//     // load from input weights
+//     Matrix test = get_matrix_from_csv("model/input_weights.csv");
+//     test.print("input weights");
+// }

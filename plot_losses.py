@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 
 # read in the data
-with open('losses.csv', 'r') as f:
+with open('training_records/losses.csv', 'r') as f:
     data = f.read()
     
 # split the data into lines (comma separated) and ensure they are floats

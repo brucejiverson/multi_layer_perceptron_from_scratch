@@ -6,6 +6,12 @@
 using namespace std;
 
 
+double reverse_logistic(double x){
+    // the inverse of the logistic function
+    return log(x/(1-x));
+}
+
+
 double** get_2D_array_subset(double** X, int start_row, int end_row){
     // get a subset of a 2D array
     // start_row and end_row are inclusive
@@ -50,16 +56,20 @@ struct BackPropData{
 
 BackPropData get_copy(BackPropData data){
     // get a copy of the back prop data
-    Matrix* dWHidden_copy = new Matrix[data.n_hidden_layers];
+    Matrix* dWHidden_copy; 
     for (int i=0; i<data.n_hidden_layers-1; i++){
+        dWHidden_copy = new Matrix[data.n_hidden_layers-1];
         dWHidden_copy[i] = data.dWHidden[i].copy();
     }
     BackPropData copy = {
-        data.loss, data.dWInput.copy(), 
+        data.loss, 
+        data.dWInput.copy(), 
         dWHidden_copy,
         data.dWOutput.copy(), 
         data.dBHidden.copy(), 
-        data.dBOutput.copy()};
+        data.dBOutput.copy(),
+        data.n_hidden_layers
+        };
     return copy;
 }
 
@@ -84,7 +94,7 @@ void back_prop_weights_and_biases_plus_equals(BackPropData data1, BackPropData d
     matrix_plus_equal(data1.dWInput, data2.dWInput);
     matrix_plus_equal(data1.dWOutput, data2.dWOutput);
     matrix_plus_equal(data1.dBHidden, data2.dBHidden);
-    data1.dBOutput = (data1.dBOutput, data2.dBOutput);
+    vector_plus_equal(data1.dBOutput, data2.dBOutput);
     for (int i=0; i<data1.n_hidden_layers-1; i++){
         matrix_plus_equal(data1.dWHidden[i], data2.dWHidden[i]);
     }
@@ -98,8 +108,8 @@ class NeuralNet
     public:
         int n_input_nodes;
         int n_hidden_nodes;
-        int n_output_nodes;
         int n_hidden_layers = 1;
+        int n_output_nodes;
         Hyperparameters hyper_params;
 
         // constructor for neural net parameterse and hyperparameters
@@ -147,7 +157,6 @@ class NeuralNet
             if (n_hidden_layers > 1){
                 Matrix* _hidden_weights = new Matrix[n_hidden_layers-1];
                 for (int i = 0; i < n_hidden_layers-1; i++){
-                    // _hidden_weights[i] = new double*[n_hidden_nodes];
                     _hidden_weights[i] = random_matrix_0_to_1_factory(n_hidden_nodes, n_hidden_nodes);
                 }
             }
@@ -155,6 +164,23 @@ class NeuralNet
                 _hidden_weights = NULL;
             }
             _output_weights = random_matrix_0_to_1_factory(n_output_nodes, n_hidden_nodes);
+
+
+            // _input_weights.array[0][0] = 0.15;
+            // _input_weights.array[0][1] = 0.2;
+            // _input_weights.array[1][0] = 0.25;
+            // _input_weights.array[1][1] = 0.3;
+
+            // _output_weights.array[0][0] = 0.4;
+            // _output_weights.array[0][1] = 0.45;
+            // _output_weights.array[1][0] = 0.5;
+            // _output_weights.array[1][1] = 0.55;
+
+            // _hidden_biases.array[0][0] = 0.35;
+            // _hidden_biases.array[0][1] = 0.35;
+
+            // _output_biases.array[0] = 0.6;
+            // _output_biases.array[1] = 0.6;
 
             printf("Neural net initialized:\n");
             print_weights_and_biases();
@@ -177,7 +203,6 @@ class NeuralNet
                     printf("There are less nodes in the hidden layer than the input layer. This is an autoencoder\n");
                 }
             }
-
         }
 
         void print_weights_and_biases(){
@@ -194,11 +219,8 @@ class NeuralNet
         // loop over the data and aggregate the nn output as well as the layer outputs and return
         // note that this was easy to write with it copying each prediction into a new array. Could be optimized later.
         // likely not a computational bottleneck though
-        Vector* feed_forward_bulk(double **features)
+        Vector* feed_forward_bulk(double **features, int n_predictions, bool verbose=false)
         {
-            // loop over all of the features and make a prediction for each one
-            int n_predictions = sizeof(features) / sizeof(features[0]);
-
             Vector* predictions = new Vector[n_predictions];
 
             for (int i = 0; i < n_predictions; i++){
@@ -207,21 +229,29 @@ class NeuralNet
 
                 // store the data in the struct
                 predictions[i] = ff.output;
+                if (verbose){
+                    this_row.print("Input");
+                    ff.output.print("Prediction for row");
+                }            
             }
             return predictions;
         }
 
         // ask the neural network to make a prediction given some input data
         FeedForwardData feed_forwards(Vector X){
-            // note that the arrays for storing the outputs have an extra dimension. 
-            //This is to aid bulk predictions in higher level functions keeping same return type
 
-            Vector* layer_outputs = new Vector[n_hidden_layers+1];
+            // check dimensions
+            if (X.length != n_input_nodes){
+                printf("Error: input data has %d rows, but the neural net has %d input nodes\n", X.length, n_input_nodes);
+                exit(1);
+            }
+
+            Vector* layer_outputs = new Vector[n_hidden_layers];
 
             // variable a for the output of the current layer
             Vector a = _get_layer_output(X, 1);       // this matrix should only have 1 row (essentially a vector)
             layer_outputs[0] = a;
-            
+            // a.print("a");
             // calculate through all the hidden layers looping over each hidden layer
             for (int i = 0; i < n_hidden_layers-1; i++){
                 a = _get_layer_output(a, i+2);
@@ -230,24 +260,32 @@ class NeuralNet
 
             // calculate the output
             a = _get_layer_output(a, n_hidden_layers+1);
-            layer_outputs[n_hidden_layers] = a;
-
+            // a.print("a");
             return FeedForwardData{layer_outputs, a};
         }
 
         // makes predictions for the full dataset, does backpropogation on that batch mutating the weights and biases, iterates, and returns the losses 
         Vector train(LabeledData data, int max_epochs=1000){
-            
+            // validate that data shape matches inputs and outputs
+            if (data.n_features != n_input_nodes){
+                printf("Error: data has %d features but the neural network has %d input nodes\n", data.n_features, n_input_nodes);
+                exit(1);
+            }
+            if (data.n_outputs != n_output_nodes){
+                printf("Error: data has %d labels but the neural network has %d output nodes\n", data.n_outputs, n_output_nodes);
+                exit(1);
+            }
+
             printf("Training the neural network for %d epochs\n", max_epochs);
             // variable losses_arr set initially to array of all zeros
             double* losses_arr = new double[max_epochs];
 
-            Vector losses(losses_arr, max_epochs);
             // var to hold the loss over the course of training
             // calculate the output of the neural network
             for (int i=0; i < max_epochs; i++){
-                losses.array[i] = _backpropogate_full_data_set(data);
+                losses_arr[i] = _backpropogate_full_data_set(data, i);
             }
+            Vector losses(losses_arr, max_epochs);
             return losses;
         }
 
@@ -281,12 +319,54 @@ class NeuralNet
             _output_biases.save_to_file("model/output_biases.csv");
         }
 
+        void load_from_file(){
+            // get the dimensions from the metadata file
+            std::ifstream metadata_file("model/meta_info.txt");
+            std::string line;
+            std::getline(metadata_file, line);
+            n_input_nodes = std::stoi(line);
+            std::getline(metadata_file, line);
+
+            n_hidden_layers = std::stoi(line);
+            std::getline(metadata_file, line);
+            n_hidden_nodes = std::stoi(line);
+
+            std::getline(metadata_file, line);
+            n_output_nodes = std::stoi(line);
+
+            // get the weights and biases from the weights and biases files
+            _input_weights = get_matrix_from_csv("model/input_weights.csv");
+            _hidden_weights = new Matrix[n_hidden_layers-1];
+            _output_weights = get_matrix_from_csv("model/output_weights.csv");
+
+            _hidden_biases = get_matrix_from_csv("model/hidden_biases.csv");
+            _output_biases = get_matrix_from_csv("model/output_biases.csv").get_row(0);
+
+            // ensure the   dimensions are correct
+            if (_input_weights.cols != n_input_nodes){
+                printf("Error: input weights have %d columns but the neural network has %d input nodes\n", _input_weights.cols, n_input_nodes);
+                exit(1);
+            }
+            if (_input_weights.rows != n_hidden_nodes){
+                printf("Error: input weights have %d rows but the neural network has %d hidden nodes\n", _input_weights.rows, n_hidden_nodes);
+                exit(1);
+            }
+            if (_output_weights.cols != n_hidden_nodes){
+                printf("Error: output weights have %d columns but the neural network has %d hidden nodes\n", _output_weights.cols, n_hidden_nodes);
+                exit(1);
+            }
+            if (_output_weights.rows != n_output_nodes){
+                printf("Error: output weights have %d rows but the neural network has %d output nodes\n", _output_weights.rows, n_output_nodes);
+                exit(1);
+            }
+
+        }
+
         // destructor
-        ~NeuralNet()
-        {
+        ~NeuralNet(){
             printf("Destroying the neural network");
             // free the memory for the weights and biases
-            delete[] _hidden_weights;
+            // delete[] _hidden_weights;
         }
 
     private:
@@ -295,34 +375,31 @@ class NeuralNet
         // layer_input is a 2D array with dimensions (1, n_nodes_in_layer)
         Vector _do_layer_calcs(Vector input, Matrix weights, Vector biases, double (*activation_func)(double)){
             Vector z = add_vectors(matrix_vector_multiply(weights, input), biases);
-            z.print("z");
+            // z.print("z");
             z.apply_function(activation_func);
             return z;
         }
 
-        Vector _get_layer_output(Vector input_to_layer, int n_layer)
-        {
-            printf("\ngetting layer output for layer %d\n", n_layer);
-            // switch case for layer number. Each case has following steps: allocate memory, multiply inputs and weights, add biases, and apply activation function
-            if (n_layer == 1){
+        Vector _get_layer_output(Vector input_to_layer, int n_layer){
+            // printf("\ngetting layer output for layer %d\n", n_layer);
+            if (n_layer == 1){                          // input layer
                 return _do_layer_calcs(input_to_layer, _input_weights, _hidden_biases.get_row(0), _hidden_layer_activation_func);
             }
             else if (n_layer == _output_layer_number){  // output layer
                 return _do_layer_calcs(input_to_layer, _output_weights, _output_biases, _output_activation_func);
             }
-            else{   // hidden layers
+            else{                                       // hidden layers
                 return _do_layer_calcs(input_to_layer, _hidden_weights[n_layer-2], _hidden_biases.get_row(n_layer-1), _hidden_layer_activation_func);
             }
         }
 
         // loops over the data set, creates minibatches and does backpropogation on each batch. returns mean loss on the batch
-        double _backpropogate_full_data_set(LabeledData data){
+        double _backpropogate_full_data_set(LabeledData data, int epoch){
             // calculate the number of batches
             int n_batches = (int) ceil((double)data.n_samples / (double) hyper_params.minibatch_size);
-            printf("Number of batches: %d", n_batches);
-            
+            // int n_batches = 1;
+            // printf("Number of batches: %d\n", n_batches);
             double loss = 0;
-            BackPropData prior_gradients;
 
             // loop over the batches
             for (int i = 0; i < n_batches; i++){
@@ -330,30 +407,24 @@ class NeuralNet
                 int start = i * hyper_params.minibatch_size;
                 int end = min(start + hyper_params.minibatch_size, data.n_samples);
 
-                LabeledData batch = get_data_subset(data, start, end);
-                // do calcs for the batch
-                BackPropData gradients = _backpropogate_mini_batch(batch);
-
-                // set the gradients to be zero for the biases (REMOVE LATER)
-                gradients.dBOutput = _output_biases;
-                gradients.dBHidden = _hidden_biases;
+                // LabeledData batch = get_data_subset(data, start, end);
                 
                 // update the loss and the weights and biases
+                BackPropData gradients = _backpropogate_mini_batch(data);
                 loss += gradients.loss;
-                BackPropData delta = get_scaled_copy_of_backpropdata(gradients, -1.0*hyper_params.learning_rate);
-                if(i > 0){ // momentum term
-                    BackPropData momentum = get_scaled_copy_of_backpropdata(prior_gradients, hyper_params.momentum);
-                    back_prop_weights_and_biases_plus_equals(delta, momentum);  // add momentum to delta
-                }
-                matrix_plus_equal(_input_weights, delta.dWInput);
-                matrix_plus_equal(_output_weights, delta.dWOutput);
-                for (int j = 0; j < n_hidden_layers-1; j++){
-                    matrix_plus_equal(_hidden_weights[j], delta.dWHidden[j]);
-                }
-                vector_plus_equal(_output_biases, delta.dBOutput);
-                matrix_plus_equal(_hidden_biases, delta.dBHidden);
 
-                prior_gradients = gradients;
+                // normalize the dervatives of weights and biases for the batch
+                BackPropData delta = get_scaled_copy_of_backpropdata(gradients, -hyper_params.learning_rate/data.n_samples);
+
+                BackPropData actual_weights = {0, _input_weights, _hidden_weights, _output_weights, _hidden_biases, _output_biases};
+                back_prop_weights_and_biases_plus_equals(actual_weights, delta);
+                if (hyper_params.momentum > 0){
+                    if (i > 0 || epoch > 0){
+                        BackPropData momentum_gradients = get_scaled_copy_of_backpropdata(_prior_gradients, hyper_params.momentum);
+                        back_prop_weights_and_biases_plus_equals(actual_weights, momentum_gradients);
+                    }
+                }
+                _prior_gradients = gradients;
             }
             loss /= n_batches;  // this is now the average for the epoch
             return loss;
@@ -362,37 +433,33 @@ class NeuralNet
         // calculate and return the loss and the gradients for a mini batch of data
         BackPropData _backpropogate_mini_batch(LabeledData data){
 
-            BackPropData back_prop_data_batch = {
-                0, 
-                Matrix(), 
-                new Matrix[n_hidden_layers], 
-                Matrix(), 
-                Matrix(), 
-                Vector(), 
-                n_hidden_layers};
-
+            BackPropData gradients_for_batch;   // this is an average of the gradients for each sample in the batch
             // loop over the data doing backpropogation for each single sample
             for (int i = 0; i < data.n_samples; i++){
                 Vector this_input(data.features[i], n_input_nodes);
                 Vector label(data.labels[i], n_output_nodes);
-                auto back_prop_data = _backpropogate_single_sample(this_input, label);
-                back_prop_data_batch.loss += back_prop_data.loss;
+                auto gradients = _backpropogate_single_sample(this_input, label);
+                
+                // print the gradients
+                // gradients.dBOutput.print("dBOutput");
+                // gradients.dWOutput.print("dWOutput");
+                // gradients.dBHidden.print("dBHidden");
+                // gradients.dWInput.print("dWInput");
+                
                 // add the values to the rest of the matrices
                 if (i == 0){
-                    back_prop_data_batch = back_prop_data;
+                    gradients_for_batch = gradients;
                 }
                 else{
-                    back_prop_weights_and_biases_plus_equals(back_prop_data_batch, back_prop_data);
+                    gradients_for_batch.loss += gradients.loss;
+                    back_prop_weights_and_biases_plus_equals(gradients_for_batch, gradients);
                 }
             }
 
             // normalize the loss by the number of samples
-            back_prop_data_batch.loss = back_prop_data_batch.loss / data.n_samples;
+            gradients_for_batch.loss = gradients_for_batch.loss / data.n_samples;
 
-            // normalize the dervatives of weights and biases for the batch 
-            BackPropData delta = get_scaled_copy_of_backpropdata(back_prop_data_batch, 1.0/data.n_samples);
-
-            return delta;
+            return gradients_for_batch;
         }
 
         // gradient descent for a single sample assuming there is only the output weights and the output biases
@@ -402,34 +469,35 @@ class NeuralNet
             auto prediction = feed_forwards(X);
 
             // NOTATION is dx = d(loss)/d(x)
-
             // calculate the derivative of the loss with respect to the output
-            Vector error = subtract_vectors(prediction.output, y);     // 1D
-            error.scale(2);
+            Vector error = subtract_vectors(prediction.output, y);
             Vector dWoutput_term2 = prediction.output.copy();
-            dWoutput_term2.apply_function(_output_activation_func_deriv);    // 1D
-            Vector dZOutput = hadamard_product(error, dWoutput_term2);
+            // dWoutput_term2.apply_function(reverse_logistic);
+            dWoutput_term2.apply_function(_output_activation_func_deriv);
+            Vector dZOutput = hadamard_product(error, dWoutput_term2);  // elementwise multiplication
 
             // dW_L = dzOutput * a(L-1)^T; where a = g(z) = g(Wx + b) and L is the number of layers
             Matrix dWOutput = multiply_vectors_for_matrix(dZOutput, prediction.layer_outputs[n_hidden_layers-1]);
 
+            Matrix dWHidden[n_hidden_layers-1];
+
             // now do the input layer
             Vector dWinput_term1 = prediction.layer_outputs[0].copy();
-            dWinput_term1.apply_function(_hidden_layer_activation_func_deriv);    // 1D
+            // dWinput_term1.apply_function(reverse_logistic);
+            dWinput_term1.apply_function(_hidden_layer_activation_func_deriv);
             Vector dWinput_term2 = matrix_vector_multiply(_output_weights.transpose(), dZOutput);   // note that the order here is switched around in a weird way...
             Vector* dZHidden = new Vector[n_hidden_layers];
             dZHidden[0] = hadamard_product(dWinput_term1, dWinput_term2);
             Matrix dWInput = multiply_vectors_for_matrix(dZHidden[0], X);    // swapped order here to make matrix dims work...
-        
-            Matrix dWHidden[n_hidden_layers-1];
 
             return BackPropData{
-                sum_of_squared_errors(prediction.output.array, y.array), 
+                sum_of_squared_errors(prediction.output, y),
                 dWInput, 
-                dWHidden, 
+                dWHidden,
                 dWOutput, 
                 aggregate_vectors(dZHidden, n_hidden_layers),
-                dZOutput};
+                dZOutput,
+                n_hidden_layers};
         }
 
         // the weights and the biases of the neural net sized according to the number of nodes in each layers these are all dynamically allocated arrays
@@ -439,6 +507,8 @@ class NeuralNet
         Matrix _input_weights;
         Matrix* _hidden_weights;
         Matrix _output_weights;
+
+        BackPropData _prior_gradients;  // used for momentum
 
         int _output_layer_number;
 

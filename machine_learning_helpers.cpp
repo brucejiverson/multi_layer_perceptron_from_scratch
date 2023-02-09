@@ -6,6 +6,8 @@ struct LabeledData
 {
     double** features;
     double** labels;
+    int n_features;
+    int n_outputs;
     int n_samples;
 };
 
@@ -18,7 +20,7 @@ LabeledData get_data_subset(LabeledData data, int start_index, int end_index){
         features[i] = data.features[start_index + i];
         labels[i] = data.labels[start_index + i];
     }
-    return LabeledData{features, labels, n_samples};
+    return LabeledData{features, labels, data.n_features, data.n_outputs, n_samples};
 }
 
 
@@ -49,7 +51,8 @@ double logistic_func(double x){
 
 
 double logistic_func_derivative(double x){
-    return logistic_func(x) * (1 - logistic_func(x));
+    // return logistic_func(x) * (1 - logistic_func(x));
+    return x * (1 - x);
 }
 
 
@@ -93,17 +96,15 @@ double softmax_derivative(double x){
 }
 
 
-double sum_of_squared_errors(double *predictions, double *labels){
-    // ensure that the predictions and labels are the same size
-    int prediction_size = (int)(sizeof(predictions) / sizeof(predictions[0]));
-    int label_size = (int)(sizeof(labels) / sizeof(labels[0]));
-    if (prediction_size != label_size){
-        printf("The predictions and labels are not the same size. Predictions size: %d, Labels size: %d", prediction_size, label_size);
+double sum_of_squared_errors(Vector predictions, Vector labels){
+    if (predictions.length != labels.length){
+        printf("The predictions and labels are not the same size. Predictions size: %d, Labels size: %d", predictions.length, labels.length);
+        exit(1);
     }
-
+    // ensure that the predictions and labels are the same size
     double sum = 0;
-    for (int i = 0; i < prediction_size; i++){
-        sum += pow(predictions[i] - labels[i], 2);
+    for (int i = 0; i < predictions.length; i++){
+        sum += pow(predictions.array[i] - labels.array[i], 2)/2;
     }
     return sum;
 }

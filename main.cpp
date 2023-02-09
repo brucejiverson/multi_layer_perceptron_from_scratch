@@ -58,7 +58,7 @@ LabeledData generate_XOR_test_data(int noise_magnitude=0, int n_meaningless_colu
 
     if (noise_magnitude == 0)
     {
-        return LabeledData{features, labels, n_data_points};
+        return LabeledData{features, labels, 2, 1, n_data_points};
     }
 
     // add noise to the data
@@ -68,38 +68,53 @@ LabeledData generate_XOR_test_data(int noise_magnitude=0, int n_meaningless_colu
         }
     }
     printf("Data has n data points: %d\n", n_data_points);
-    return LabeledData{features, labels, n_data_points};
+    return LabeledData{features, labels, 2, 1, n_data_points};
 }
 
 
 int main(){
-    auto xor_data = generate_XOR_test_data();
-    printf("XOR training data:\n");
-    print_2D_array(xor_data.features, 4, 2);
-
-    printf("XOR training labels:\n");
-    print_2D_array(xor_data.labels, 4, 1);
 
     // create an instance of the neural network (initializes with random weights)
     // define the neural net dimensions: input, hidden nodes per layer, hidden layers, output nodes
-    Hyperparameters hp = DEFAULT_HYPERPARAMS;
-    hp.momentum = 0;
-    hp.learning_rate = 1;
-    NeuralNet neural_net(2, 1, 4, 1, hp);
+
+    double** features = new double*[1];
+    features[0] = new double[2];
+    features[0][0] = 0.05; 
+    features[0][1] = 0.1;
+
+    double** labels = new double*[1];
+    labels[0] = new double[1];
+    labels[0][0] = 0.01;
+    labels[0][1] = 0.99;
+
+    LabeledData test = {features, labels, 2, 2, 1}; // inputs, outputs, n samples
+
+    auto data = generate_XOR_test_data();
+    printf("XOR training data:\n");
+    print_2D_array(data.features, 4, 2);
+
+    printf("XOR training labels:\n");
+    print_2D_array(data.labels, 4, 1);
+    NeuralNet neural_net(2, 1, 4);
+    neural_net.hyper_params.learning_rate = 0.5;
+    neural_net.hyper_params.momentum = 0;
+    int n_epochs = 5000;
 
     // train the neural network, recording the scores
-    int n_epochs = 20;
+    // NeuralNet neural_net(2, 2, 2);
+    // int n_epochs = 1;
     
-    Vector losses = neural_net.train(xor_data, n_epochs);    // note there is an implicit accuracy threshold of 0.99
-
-    // starting loss
-    printf("Starting loss: %f\n", losses.array[0]);
-    // ending loss
-    printf("Ending loss: %f\n", losses.array[n_epochs-1]);
-    
+    Vector losses = neural_net.train(data, n_epochs);
     printf("Final weights and biases:\n");
     neural_net.print_weights_and_biases();
 
+    printf("Starting loss: %f\n", losses.array[0]);
+    printf("Ending loss: %f\n", losses.array[n_epochs-1]);
+
+    // Vector last_loss = neural_net.train(test, n_epochs);
+    // printf("last loss: %f\n", last_loss.array[0]);
+    
     neural_net.save_to_file();
-    losses.save_to_file("losses.csv");
+    losses.save_to_file("training_records/losses.csv");
 }
+
