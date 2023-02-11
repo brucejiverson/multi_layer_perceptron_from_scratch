@@ -81,10 +81,10 @@ int main(){
     data.features.print("XOR training data");
     data.labels.print("XOR training labels");
 
-    NeuralNet neural_net(data.features.n_cols, data.labels.n_cols, 10, 2);
-    neural_net.hyper_params.learning_rate = 0.5;
+    NeuralNet neural_net(data.features.n_cols, data.labels.n_cols, 2, 4);
+    neural_net.hyper_params.learning_rate = 1;
     neural_net.hyper_params.momentum = 0;
-    int n_epochs = 10000;
+    int n_epochs = 100000;
     
     Vector losses = neural_net.train(data, n_epochs);
     printf("Final weights and biases:\n");

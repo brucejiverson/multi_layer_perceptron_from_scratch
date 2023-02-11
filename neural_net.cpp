@@ -26,7 +26,7 @@ struct Hyperparameters
 };
 
 
-const Hyperparameters DEFAULT_HYPERPARAMS = {0.1, 0.9};
+const Hyperparameters DEFAULT_HYPERPARAMS = {0.5, 0};
 
 
 // a struct to hold the metadata for the feedforward pass for back prop
@@ -273,7 +273,7 @@ class NeuralNet
 
             _input_weights.save_to_file("model/input_weights.csv");
             for (int i = 0; i < n_hidden_layers-1; i++){
-                _hidden_weights[i].save_to_file("model/hidden_weights.csv");
+                _hidden_weights[i].save_to_file("model/hidden_weights/" + std::to_string(i) + ".csv");
             }
             _output_weights.save_to_file("model/output_weights.csv");
             if (n_hidden_layers > 0){
@@ -301,6 +301,12 @@ class NeuralNet
             // get the weights and biases from the weights and biases files
             _input_weights = get_matrix_from_csv(folder+"/input_weights.csv");
             _hidden_weights = new Matrix[n_hidden_layers-1];
+
+            for (int i = 0; i < n_hidden_layers-1; i++){
+                // get the name of the file by converting the number i to string and appending to the folder name such as /hidden_weights/1.csv
+                _hidden_weights[i] = get_matrix_from_csv(folder+"/hidden_weights/"+std::to_string(i)+".csv");
+            }
+
             _output_weights = get_matrix_from_csv(folder+"/output_weights.csv");
 
             _hidden_biases = get_matrix_from_csv(folder+"/hidden_biases.csv");
