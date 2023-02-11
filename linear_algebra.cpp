@@ -94,21 +94,21 @@ class Vector{
 class Matrix{
     public:
         double** array;
-        int rows;
-        int cols;
+        int n_rows;
+        int n_cols;
 
         // default constructor
         Matrix(){
             this->array = 0;
-            this->rows = 0;
-            this->cols = 0;
+            this->n_rows = 0;
+            this->n_cols = 0;
         }
 
         // constructor
         Matrix(double** array, int r, int c){
             this->array = array;
-            this->rows = r;
-            this->cols = c;
+            this->n_rows = r;
+            this->n_cols = c;
         }
 
         // get element
@@ -123,25 +123,25 @@ class Matrix{
 
         // get column
         double* get_col_as_arr(int col){
-            double* arr = new double[rows];
-            for (int i = 0; i < rows; i++){
+            double* arr = new double[n_rows];
+            for (int i = 0; i < n_rows; i++){
                 arr[i] = array[i][col];
             }
             return arr;
         }
 
         Vector get_row(int row){
-            return Vector(get_row_as_arr(row), cols);
+            return Vector(get_row_as_arr(row), n_cols);
         }
 
         Vector get_column(int col){
-            return Vector(get_col_as_arr(col), rows);
+            return Vector(get_col_as_arr(col), n_rows);
         }
 
         // multiplies the matrix in place by a scalar
         void scale(double scalar){
-            for (int i = 0; i < rows; i++){
-                for (int j = 0; j < cols; j++){
+            for (int i = 0; i < n_rows; i++){
+                for (int j = 0; j < n_cols; j++){
                     array[i][j] = array[i][j] * scalar;
                 }
             }
@@ -150,24 +150,24 @@ class Matrix{
         // returns a new matrix that is the transpose of the current matrix
         Matrix transpose(){
             // create a new array to store the transposed matrix
-            double** arr = new double*[cols];
-            for (int i = 0; i < cols; i++){
-                arr[i] = new double[rows];
+            double** arr = new double*[n_cols];
+            for (int i = 0; i < n_cols; i++){
+                arr[i] = new double[n_rows];
             }
 
             // transpose the matrix
-            for (int i = 0; i < rows; i++){
-                for (int j = 0; j < cols; j++){
+            for (int i = 0; i < n_rows; i++){
+                for (int j = 0; j < n_cols; j++){
                     arr[j][i] = array[i][j];
                 }
             }
-            return Matrix(arr, cols, rows);
+            return Matrix(arr, n_cols, n_rows);
         }
 
         // apply function to transform each element in the matrix
         void apply_function(double (*func)(double)){
-            for (int i = 0; i < rows; i++){
-                for (int j = 0; j < cols; j++){
+            for (int i = 0; i < n_rows; i++){
+                for (int j = 0; j < n_cols; j++){
                     array[i][j] = func(array[i][j]);
                 }
             }
@@ -175,27 +175,27 @@ class Matrix{
 
         // a function called print that takes in the name of the array as an argument and prints it
         void print(std::string name=""){;
-            printf("Matrix %s sized %d x %d is:\n", name.c_str(), rows, cols);
-            print_2D_array(array, rows, cols);
+            printf("Matrix %s sized %d x %d is:\n", name.c_str(), n_rows, n_cols);
+            print_2D_array(array, n_rows, n_cols);
         }
 
         Matrix copy(){
-            double** arr = new double*[rows];
-            for (int i = 0; i < rows; i++){
-                arr[i] = new double[cols];
-                for (int j = 0; j < cols; j++){
+            double** arr = new double*[n_rows];
+            for (int i = 0; i < n_rows; i++){
+                arr[i] = new double[n_cols];
+                for (int j = 0; j < n_cols; j++){
                     arr[i][j] = array[i][j];
                 }
             }
-            return Matrix(arr, rows, cols);
+            return Matrix(arr, n_rows, n_cols);
         }
 
         void save_to_file(std::string filename){
             ofstream myfile (filename);
                 if (myfile.is_open())
                 {
-                    for(int count = 0; count < rows; count ++){
-                        for(int count2 = 0; count2 < cols; count2 ++){
+                    for(int count = 0; count < n_rows; count ++){
+                        for(int count2 = 0; count2 < n_cols; count2 ++){
                             myfile << array[count][count2] << "," ;
                         }
                         myfile << ",\n";
@@ -266,55 +266,48 @@ Matrix get_matrix_from_1D_array(double* arr, int length){
 }
 
 
-// array size macros
-#define ROWS_IN_2D_ARRAY(a2D)       (int)( sizeof( a2D       ) / sizeof( a2D[0]          )) // No. of Rows in a 2D array
-#define COLUMNS_IN_2D_ARRAY(a2D)    (int)( sizeof( a2D[0]    ) / sizeof( a2D[0][0]       )) // No. of Columns in a 2D array
-// #define GET_2DARRAY_DIMS(a2D)        ArrayDims{ROWS_IN_2D_ARRAY(a2D), COLUMNS_IN_2D_ARRAY(a2D)}
-#define GET_ELEMENTS_IN_VECTOR(a1D) (int)( sizeof( a1D       ) / sizeof( a1D[0]          )) // No. of Elements in a 1D array
-
-
 // matrix multiply function with Matrix class
 Matrix matrix_multiply(Matrix matrix1, Matrix matrix2)
 {
     // check that the number of columns in the first matrix is equal to the number of rows in the second matrix
-    if (matrix1.cols != matrix2.rows)    {
+    if (matrix1.n_cols != matrix2.n_rows)    {
         // print out the and an error message
         printf("The number of columns in the first matrix is not equal to the number of rows in the second matrix.\n");
-        printf("Matrix 1: %d x %d. ", matrix1.rows, matrix1.cols);
-        printf("Matrix 2: %d x %d.\n", matrix2.rows, matrix2.cols);
+        printf("Matrix 1: %d x %d. ", matrix1.n_rows, matrix1.n_cols);
+        printf("Matrix 2: %d x %d.\n", matrix2.n_rows, matrix2.n_cols);
         return Matrix(0, 0, 0);
         }
 
     // create a new matrix to store the result of the multiplication
-    double** arr = new double*[matrix1.rows];
+    double** arr = new double*[matrix1.n_rows];
 
-    for (int i = 0; i < matrix1.rows; i++){        // iterate through the rows of the first matrix
-        arr[i] = new double[matrix2.cols];
-        for (int j = 0; j < matrix2.cols; j++){    // iterate through the columns of the second matrix
+    for (int i = 0; i < matrix1.n_rows; i++){        // iterate through the rows of the first matrix
+        arr[i] = new double[matrix2.n_cols];
+        for (int j = 0; j < matrix2.n_cols; j++){    // iterate through the columns of the second matrix
             arr[i][j] = 0;
-            for (int k = 0; k < matrix1.cols; k++){// iterate through the columns of the first matrix
+            for (int k = 0; k < matrix1.n_cols; k++){// iterate through the columns of the first matrix
                 arr[i][j] += matrix1.array[i][k] * matrix2.array[k][j];
             }
         }
     }
-    return Matrix(arr, matrix1.rows, matrix2.cols); 
+    return Matrix(arr, matrix1.n_rows, matrix2.n_cols); 
 }
 
 // subtracts the second matrix from the first matrix in poace
 void matrix_minus_equals(Matrix matrix1, Matrix matrix2)
 {
     // check that the dimensions of the matrices are the same
-    if (matrix1.rows != matrix2.rows || matrix1.cols != matrix2.cols){
+    if (matrix1.n_rows != matrix2.n_rows || matrix1.n_cols != matrix2.n_cols){
         // print out the and an error message
         printf("The dimensions of the matrices are not the same.\n");
-        printf("Matrix 1: %d x %d. ", matrix1.rows, matrix1.cols);
-        printf("Matrix 2: %d x %d.\n", matrix2.rows, matrix2.cols);
+        printf("Matrix 1: %d x %d. ", matrix1.n_rows, matrix1.n_cols);
+        printf("Matrix 2: %d x %d.\n", matrix2.n_rows, matrix2.n_cols);
         return;
     }
 
     // subtract the second matrix from the first matrix
-    for (int i = 0; i < matrix1.rows; i++){        // iterate through the rows of the first matrix
-        for (int j = 0; j < matrix1.cols; j++){    // iterate through the columns of the second matrix
+    for (int i = 0; i < matrix1.n_rows; i++){        // iterate through the rows of the first matrix
+        for (int j = 0; j < matrix1.n_cols; j++){    // iterate through the columns of the second matrix
             matrix1.array[i][j] -= matrix2.array[i][j];
         }
     }
@@ -324,16 +317,16 @@ void matrix_minus_equals(Matrix matrix1, Matrix matrix2)
 void matrix_plus_equal(Matrix matrix1, Matrix matrix2)
 {
     // check that the dimensions of the matrices are the same
-    if (matrix1.rows != matrix2.rows || matrix1.cols != matrix2.cols){
+    if (matrix1.n_rows != matrix2.n_rows || matrix1.n_cols != matrix2.n_cols){
         // print out the and an error message
-        printf("Matrix 1: %d x %d. ", matrix1.rows, matrix1.cols);
-        printf("Matrix 2: %d x %d.\n", matrix2.rows, matrix2.cols);
+        printf("Matrix 1: %d x %d. ", matrix1.n_rows, matrix1.n_cols);
+        printf("Matrix 2: %d x %d.\n", matrix2.n_rows, matrix2.n_cols);
         throw runtime_error("The dimensions of the matrices are not the same.");
     }
 
     // add the second matrix to the first matrix
-    for (int i = 0; i < matrix1.rows; i++){        // iterate through the rows of the first matrix
-        for (int j = 0; j < matrix1.cols; j++){    // iterate through the columns of the second matrix
+    for (int i = 0; i < matrix1.n_rows; i++){        // iterate through the rows of the first matrix
+        for (int j = 0; j < matrix1.n_cols; j++){    // iterate through the columns of the second matrix
             matrix1.array[i][j] += matrix2.array[i][j];
         }
     }
@@ -433,18 +426,18 @@ Matrix vector_to_matrix(Vector v, bool horizontal=true){
 
 
 Vector matrix_to_vector(Matrix m){
-    if (m.rows == 1 && m.cols >= 1){
-        return Vector(m.array[0], m.cols);
+    if (m.n_rows == 1 && m.n_cols >= 1){
+        return Vector(m.array[0], m.n_cols);
     }
-    else if (m.cols == 1 && m.rows > 1){
-        double* arr = new double[m.rows];
-        for (int i=0; i<m.rows; i++){
+    else if (m.n_cols == 1 && m.n_rows > 1){
+        double* arr = new double[m.n_rows];
+        for (int i=0; i<m.n_rows; i++){
             arr[i] = m.array[i][0];
         }
-        return Vector(arr, m.rows);
+        return Vector(arr, m.n_rows);
     }
     else{
-        printf("The matrix is not a vector. It is %d x %d", m.rows, m.cols);
+        printf("The matrix is not a vector. It is %d x %d", m.n_rows, m.n_cols);
         return Vector();
     }
 }
@@ -494,21 +487,21 @@ Matrix multiply_vectors_for_matrix(Vector vec1, Vector vec2){
 // multiplies the matrix by the vector and returns the resulting vector such as: result = mat * vec
 // assumes the vector is a column vector
 Vector matrix_vector_multiply(Matrix mat, Vector vec){
-     if (mat.cols == vec.length){
+     if (mat.n_cols == vec.length){
         // create a new matrix to store the result of the subtraction
-        double* result = new double[mat.rows];
+        double* result = new double[mat.n_rows];
 
         // iterate through the rows of the first matrix
-        for (int i = 0; i < mat.rows; i++){
-            for (int j = 0; j < mat.cols; j++){
+        for (int i = 0; i < mat.n_rows; i++){
+            for (int j = 0; j < mat.n_cols; j++){
                 result[i] += mat.array[i][j] * vec.array[j];
             }
         }
-        return Vector(result, mat.rows);
+        return Vector(result, mat.n_rows);
     }
     else{
-        printf("Matrix: %d x %d. ", mat.rows, mat.cols);
-        printf("Vector: %d.\n", vec.length);
+        printf("Error! Matrix size: %d x %d. ", mat.n_rows, mat.n_cols);
+        printf("Vector length: %d.\n", vec.length);
         throw runtime_error("The dimensions of the matrix and vector are not compatible.\n");
     }
 
@@ -587,10 +580,3 @@ Vector zeros_vector_factory(int length){
     }
     return Vector(arr, length);
 }
-
-
-// int main(){
-//     // load from input weights
-//     Matrix test = get_matrix_from_csv("model/input_weights.csv");
-//     test.print("input weights");
-// }

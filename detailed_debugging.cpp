@@ -19,10 +19,12 @@ int main(){
     labels[0][0] = 0.01;
     labels[0][1] = 0.99;
 
-    LabeledData data = {features, labels, 2, 2, 1}; // inputs, outputs, n samples
+    LabeledData data = {Matrix(features, 1, 2), Matrix(labels, 1, 2)}; // inputs, outputs, n samples
 
     // train the neural network, recording the scores
     NeuralNet neural_net(2, 2, 2);
+    neural_net.hyper_params.learning_rate = 0.5;
+    neural_net.hyper_params.momentum = 0;
     int n_epochs = 1;
 
     neural_net.load_from_file("test_model");

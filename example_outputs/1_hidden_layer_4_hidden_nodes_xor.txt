@@ -1,0 +1,52 @@
+Compiling xor_test.cpp
+Running xor_test.exe
+-------------------
+Matrix XOR training data sized 4 x 2 is:
+0.0000 0.0000 
+0.0000 1.0000 
+1.0000 0.0000 
+1.0000 1.0000 
+
+Matrix XOR training labels sized 4 x 1 is:
+0.0000 
+1.0000 
+1.0000 
+0.0000 
+
+Initializing the neural network with random weights and biases
+Single hidden layer neural net with 2 input nodes, 4 hidden nodes, and 1 output nodes
+Neural net initialized!
+Matrix input weights sized 4 x 2 is:
+0.1976 0.3352 
+0.7682 0.2778 
+0.5540 0.4774 
+0.6289 0.3648 
+
+Matrix output weights sized 1 x 4 is:
+0.5134 0.9522 0.9162 0.6357 
+
+Matrix hidden biases sized 1 x 4 is:
+0.8402 0.3944 0.7831 0.7984 
+
+Vector output biases w/ length 1 is:
+0.9116 
+
+Training the neural network for 10000 epochs
+Final weights and biases:
+Matrix input weights sized 4 x 2 is:
+-2.5835 5.7231 
+5.0478 5.0686 
+3.6621 3.6853 
+5.7179 -2.4639 
+
+Matrix output weights sized 1 x 4 is:
+-6.8163 6.4832 4.0944 -6.8065 
+
+Matrix hidden biases sized 1 x 4 is:
+0.2748 -1.0347 0.0127 0.1513 
+
+Vector output biases w/ length 1 is:
+-0.0437 
+
+Starting loss: 0.230002
+Ending loss: 0.001261

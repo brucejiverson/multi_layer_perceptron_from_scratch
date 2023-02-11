@@ -4,11 +4,8 @@
 
 struct LabeledData
 {
-    double** features;
-    double** labels;
-    int n_features;
-    int n_outputs;
-    int n_samples;
+    Matrix features;
+    Matrix labels;
 };
 
 
@@ -17,10 +14,13 @@ LabeledData get_data_subset(LabeledData data, int start_index, int end_index){
     double** features = new double*[n_samples];
     double** labels = new double*[n_samples];
     for (int i = 0; i < n_samples; i++){
-        features[i] = data.features[start_index + i];
-        labels[i] = data.labels[start_index + i];
+        features[i] = data.features.array[start_index + i];
+        labels[i] = data.labels.array[start_index + i];
     }
-    return LabeledData{features, labels, data.n_features, data.n_outputs, n_samples};
+    return LabeledData{
+        Matrix(features, n_samples, data.features.n_cols), 
+        Matrix(labels, n_samples, data.labels.n_cols)
+        };
 }
 
 
