@@ -7,7 +7,7 @@ I've looked through some of the common one neural net from scratch projects, and
 
 ## Requirements
 1. Basic neural net with 1 hidden layer and gradient descent backpropogation. All layers dense/fully connected
-2. Must do all math myself: no fancy libraries
+2. Must do all math myself: no libraries, including std::vector, arrays only
 3. Configurable number of input and output nodes
 4. Configurable activation functions as activation function selection can be problem specific
 5. Bonus points: 
