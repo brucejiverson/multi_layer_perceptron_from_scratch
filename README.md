@@ -1,11 +1,11 @@
-## Idea and Criteria for Neural Net from scratch
+# Idea and Criteria for Neural Net from scratch
 I am looking to refresh some of my C++ knowledge, and have a long standing interest in machine learning. Building a neural net from scratch seems like an excellent project that is sized appropriately and will deepen my understanding of machine learning. 
 
 I don't expect this code to outperform anyone, nor do I intend to use this code for anything past demonstrations of functionality. 
 
 I've looked through some of the common one neural net from scratch projects, and most seem to be for a single layer network, and are written in python (I used the one linked below as a strong reference throughout the project). Let's say that our code should be able to construct networks of arbitrary size (within reason). This and the fact that I've written less than 50 lines of C++ last year should make this project sufficiently challenging to hold my interest. 
 
-## Requirements
+# Requirements
 1. Basic neural net with 1 hidden layer and gradient descent backpropogation. All layers dense/fully connected
 2. Must do all math myself: no libraries, including std::vector, arrays only
 3. Configurable number of input and output nodes
@@ -18,7 +18,12 @@ I've looked through some of the common one neural net from scratch projects, and
 
 I don't want to hassel with figuring out the C++ bindings for matplotlib or other C++ plotting techniques, so instead I've exported the data and used a python script for data visualization. 
 
-## How to Run
+# Demonstration
+![layer output](./images/1_layer_output_XOR.png)
+![loss](./images/2_hidden_layers_10_hidden_nodes_XOR_.5_0.png)
+
+
+# How to Run
 Set up a quick python envrionment, install matplotlib, and execute the following in terminal:
 `python run.py -i xor_test`
 
