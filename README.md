@@ -3,7 +3,7 @@ I am looking to refresh some of my C++ knowledge, and have a long standing inter
 
 I don't expect this code to outperform anyone, nor do I intend to use this code for anything past demonstrations of functionality. 
 
-I've looked through some of the common one neural net from scratch projects, and most seem to be for a single layer network, and are written in python (I used the one linked below as a strong reference throughout the project). Let's say that our code should be able to construct networks of arbitrary size (within reason). This and the fact that I've written less than 50 lines of C++ last year should make this project sufficiently challenging to hold my interest. 
+Most blog posts with basic neural net projects seem to be for single layer networks and are all written in python. I consider that to be trivial, so this project will have **fully connected networks of arbitrary input, output, hidden nodes, and hidden layer numbers**. This and the fact that I've written less than 50 lines of C++ last year should make this project sufficiently challenging to hold my interest. 
 
 # Requirements
 1. Basic neural net with 1 hidden layer and gradient descent backpropogation. All layers dense/fully connected
